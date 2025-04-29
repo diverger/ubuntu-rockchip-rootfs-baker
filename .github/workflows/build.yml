@@ -7,15 +7,26 @@ on:
       suite:
         description: "Suite name"
         required: true
+        type: choice
         default: "noble"
+        options:
+        - "jammy"
+        - "noble"
+
       flavor:
         description: "Flavor type"
         required: true
+        type: choice
         default: "desktop"
+        options:
+        - "desktop"
+        - "server"
+
 
 env:
   RECIPE_REPO: "diverger/ubuntu-rockchip"
   RECIPE_PATH: "."
+  ROOTFS_PATH: "./build/rootfs"
 
 jobs:
   build:
@@ -40,6 +51,8 @@ jobs:
           repository: ${{ env.RECIPE_REPO }}
           token: ${{ secrets.REPO_ACCESS_TOKEN }}
           path: ${{ env.RECIPE_PATH }}
+          clean: false
+          fetch-depth: 1
 
       # - name: List files in workspace root
       #   shell: bash
@@ -50,11 +63,9 @@ jobs:
         run: |
           suite_ver=${{ github.event.inputs.suite == 'jammy' && '22.04' || github.event.inputs.suite == 'noble' && '24.04' }}
           artifact_name="ubuntu-${suite_ver}-preinstalled-${{ github.event.inputs.flavor }}-arm64-rootfs"
-          artifact_path="${{ env.RECIPE_PATH }}/build/ubuntu-${suite_ver}-preinstalled-${{ github.event.inputs.flavor }}-arm64.rootfs.tar.xz"
-          build_dir="${{ env.RECIPE_PATH }}/build"
+          artifact_path="${{ env.ROOTFS_PATH }}/ubuntu-${suite_ver}-preinstalled-${{ github.event.inputs.flavor }}-arm64.rootfs.tar.xz"
           echo "artifact_name=${artifact_name}" >> $GITHUB_OUTPUT
           echo "artifact_path=${artifact_path}" >> $GITHUB_OUTPUT
-          echo "build_dir=${build_dir}" >> $GITHUB_OUTPUT
 
       - name: Install dependencies
         shell: bash
@@ -88,7 +99,7 @@ jobs:
         id: cache-artifact
         uses: actions/cache@v4
         with:
-          path: ${{ steps.vars.outputs.build_dir }}
+          path: ${{ env.ROOTFS_PATH }}
           # ---- UPDATED KEY ----
           # Include OS, suite, flavor, local files hash, AND external repo commit hash
           key: ${{ runner.os }}-${{ github.event.inputs.suite }}-${{ github.event.inputs.flavor }}-${{ steps.hash.outputs.files_hash }}-${{ steps.external_commit.outputs.commit_hash }}
