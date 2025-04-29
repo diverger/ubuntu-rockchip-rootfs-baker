@@ -15,7 +15,7 @@ on:
 
 env:
   RECIPE_REPO: "diverger/ubuntu-rockchip"
-  RECIPE_PATH: "."
+  RECIPE_PATH: "recipe"
 
 jobs:
   build:
@@ -99,8 +99,9 @@ jobs:
 
       - name: Build
         if: steps.cache-artifact.outputs.cache-hit != 'true'
+        working-directory: ${{ env.RECIPE_PATH }}
         shell: bash
-        run: sudo ${{ env.RECIPE_PATH }}/build.sh --suite=${{ github.event.inputs.suite }} --flavor=${{ github.event.inputs.flavor }}  --rootfs-only
+        run: sudo ./build.sh --suite=${{ github.event.inputs.suite }} --flavor=${{ github.event.inputs.flavor }}  --rootfs-only
 
       - name: Upload
         uses: actions/upload-artifact@v4.3.3
