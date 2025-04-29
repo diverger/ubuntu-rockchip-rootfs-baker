@@ -34,14 +34,17 @@ jobs:
           large-packages: true
           swap-storage: true
 
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
       - name: Checkout private repository
         uses: actions/checkout@v4
         with:
           repository: ${{ env.RECIPE_REPO }}
           token: ${{ secrets.REPO_ACCESS_TOKEN }}
+
+      - name: Remove .github folder from private repo checkout
+        run: rm -rf .github
+
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
       - name: Set artifact variables
         id: vars
