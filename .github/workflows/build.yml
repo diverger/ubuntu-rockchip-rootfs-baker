@@ -15,7 +15,7 @@ on:
 
 env:
   RECIPE_REPO: "diverger/ubuntu-rockchip"
-  RECIPE_PATH: "ubuntu-rockchip"
+  RECIPE_PATH: "."
 
 jobs:
   build:
@@ -42,7 +42,6 @@ jobs:
         with:
           repository: ${{ env.RECIPE_REPO }}
           token: ${{ secrets.REPO_ACCESS_TOKEN }}
-          path: ${{ env.RECIPE_PATH }}
 
       - name: Set artifact variables
         id: vars
