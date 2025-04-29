@@ -39,7 +39,11 @@ jobs:
         with:
           repository: ${{ env.RECIPE_REPO }}
           token: ${{ secrets.REPO_ACCESS_TOKEN }}
-          # path: ${{ env.RECIPE_PATH }}
+          path: ${{ env.RECIPE_PATH }}
+
+      - name: List files in workspace root
+        shell: bash
+        run: ls -la ${{ env.RECIPE_PATH }}
 
       - name: Set artifact variables
         id: vars
@@ -94,9 +98,8 @@ jobs:
 
       - name: Build
         if: steps.cache-artifact.outputs.cache-hit != 'true'
-        # working-directory: ${{ env.RECIPE_PATH }}
         shell: bash
-        run: sudo ./build.sh --suite=${{ github.event.inputs.suite }} --flavor=${{ github.event.inputs.flavor }}  --rootfs-only
+        run: sudo ${{ env.RECIPE_PATH }}/build.sh --suite=${{ github.event.inputs.suite }} --flavor=${{ github.event.inputs.flavor }}  --rootfs-only
 
       - name: Upload
         uses: actions/upload-artifact@v4.3.3
