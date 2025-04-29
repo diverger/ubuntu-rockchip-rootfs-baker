@@ -1,0 +1,108 @@
+name: Build on Dispatch
+run-name: Build rootfs on Dispatch
+
+on:
+  workflow_dispatch:
+    inputs:
+      suite:
+        description: "Suite name"
+        required: true
+        default: "noble"
+      flavor:
+        description: "Flavor type"
+        required: true
+        default: "desktop"
+
+env:
+  RECIPE_REPO: "diverger/ubuntu-rockchip"
+  RECIPE_PATH: "ubuntu-rockchip"
+
+jobs:
+  build:
+    if: ${{ github.repository_owner == 'diverger'}}
+    runs-on: ubuntu-latest
+    name: Build rootfs
+
+    steps:
+      - name: Get more disk space
+        uses: jlumbroso/free-disk-space@main
+        with:
+          tool-cache: false
+          android: true
+          dotnet: true
+          haskell: true
+          large-packages: true
+          swap-storage: true
+
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Checkout private repository
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ env.RECIPE_REPO }}
+          token: ${{ secrets.REPO_ACCESS_TOKEN }}
+          path: ${{ env.RECIPE_PATH }}
+
+      - name: Set artifact variables
+        id: vars
+        run: |
+          suite_ver=${{ github.event.inputs.suite == 'jammy' && '22.04' || github.event.inputs.suite == 'noble' && '24.04' }}
+          artifact_name="ubuntu-${suite_ver}-preinstalled-${{ github.event.inputs.flavor }}-arm64-rootfs"
+          artifact_path="${{ env.RECIPE_PATH }}/build/ubuntu-${suite_ver}-preinstalled-${{ github.event.inputs.flavor }}-arm64.rootfs.tar.xz"
+          build_dir="${{ env.RECIPE_PATH }}/build"
+          echo "artifact_name=${artifact_name}" >> $GITHUB_OUTPUT
+          echo "artifact_path=${artifact_path}" >> $GITHUB_OUTPUT
+          echo "build_dir=${build_dir}" >> $GITHUB_OUTPUT
+
+      - name: Install dependencies
+        shell: bash
+        run: |
+          sudo apt-get update && apt-get purge needrestart -y && sudo apt-get upgrade -y
+          sudo apt-get install -y build-essential gcc-aarch64-linux-gnu bison \
+          qemu-user-static qemu-system-arm qemu-efi-aarch64 u-boot-tools binfmt-support \
+          debootstrap flex libssl-dev bc rsync kmod cpio xz-utils fakeroot parted \
+          udev dosfstools uuid-runtime git-lfs device-tree-compiler python3 \
+          python-is-python3 fdisk bc debhelper python3-pyelftools python3-setuptools \
+          python3-pkg-resources swig libfdt-dev libpython3-dev dctrl-tools gawk
+
+      - name: Hash Source Files
+        id: hash
+        shell: bash
+        run: |
+          # Include all files/dirs in *this* repo that affect the build output
+          echo "files_hash=$(find ${{ env.RECIPE_PATH }}/scripts ${{ env.RECIPE_PATH }}/build.sh ${{ env.RECIPE_PATH }}/config -type f -print0 | sort -z | xargs -0 sha1sum | sha1sum | awk '{ print $1 }')" >> $GITHUB_OUTPUT
+
+      - name: Get External Repo Commit Hash
+        id: external_commit
+        shell: bash
+        run: |
+          # Get the latest commit hash of the diverger branch from the external repo
+          # Use --filter=blob:none and --no-checkout for efficiency
+          git clone --filter=blob:none --no-checkout --depth 1 --branch diverger https://github.com/diverger/livecd-rootfs-joshua temp-clone-meta
+          echo "commit_hash=$(git -C temp-clone-meta rev-parse HEAD)" >> $GITHUB_OUTPUT
+          rm -rf temp-clone-meta
+
+      - name: Cache artifact
+        id: cache-artifact
+        uses: actions/cache@v4
+        with:
+          path: ${{ steps.vars.outputs.build_dir }}
+          # ---- UPDATED KEY ----
+          # Include OS, suite, flavor, local files hash, AND external repo commit hash
+          key: ${{ runner.os }}-${{ github.event.inputs.suite }}-${{ github.event.inputs.flavor }}-${{ steps.hash.outputs.files_hash }}-${{ steps.external_commit.outputs.commit_hash }}
+          # restore-keys: |
+          #   ${{ runner.os }}-${{ github.event.inputs.suite }}-${{ github.event.inputs.flavor }}-${{ steps.hash.outputs.files_hash }}-
+          #   ${{ runner.os }}-${{ github.event.inputs.suite }}-${{ github.event.inputs.flavor }}-
+
+      - name: Build
+        if: steps.cache-artifact.outputs.cache-hit != 'true'
+        shell: bash
+        run: sudo ${{ env.RECIPE_PATH }}/build.sh --suite=${{ github.event.inputs.suite }} --flavor=${{ github.event.inputs.flavor }}
+
+      - name: Upload
+        uses: actions/upload-artifact@v4.3.3
+        with:
+            name: ${{ steps.vars.outputs.artifact_name }}
+            path: ${{ steps.vars.outputs.artifact_path }}
+            if-no-files-found: error
