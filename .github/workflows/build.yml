@@ -39,7 +39,7 @@ jobs:
         with:
           repository: ${{ env.RECIPE_REPO }}
           token: ${{ secrets.REPO_ACCESS_TOKEN }}
-          # path: ${{ env.RECIPE_PATH }}
+          path: ${{ env.RECIPE_PATH }}
 
       - name: Set artifact variables
         id: vars
