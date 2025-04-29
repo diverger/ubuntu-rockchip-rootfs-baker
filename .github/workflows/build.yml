@@ -41,9 +41,9 @@ jobs:
           token: ${{ secrets.REPO_ACCESS_TOKEN }}
           path: ${{ env.RECIPE_PATH }}
 
-      - name: List files in workspace root
-        shell: bash
-        run: ls -la ${{ env.RECIPE_PATH }}
+      # - name: List files in workspace root
+      #   shell: bash
+      #   run: ls -la ${{ env.RECIPE_PATH }}
 
       - name: Set artifact variables
         id: vars
