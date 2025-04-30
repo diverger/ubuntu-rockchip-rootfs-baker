@@ -127,7 +127,14 @@ jobs:
       - name: Fix permissions for cache/upload
         if: steps.cache-artifact.outputs.cache-hit != 'true' # Only run if build happened
         shell: bash
-        run: sudo chown -R runner:runner ${{ env.ROOTFS_PATH }}
+        run: |
+          echo "Attempting to fix permissions in ${{ env.ROOTFS_PATH }}"
+          # Change ownership first
+          sudo chown -R runner:runner ${{ env.ROOTFS_PATH }} || echo "chown failed but continuing"
+          # Ensure directories are traversable and files are readable by the owner (runner)
+          sudo find ${{ env.ROOTFS_PATH }} -type d -exec chmod u+rwx {} \; || echo "chmod on dirs failed but continuing"
+          sudo find ${{ env.ROOTFS_PATH }} -type f -exec chmod u+r {} \; || echo "chmod on files failed but continuing"
+          echo "Permission fix attempt finished."
 
       - name: Upload
         uses: actions/upload-artifact@v4.3.3
