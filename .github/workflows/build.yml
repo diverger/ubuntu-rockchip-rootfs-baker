@@ -1,5 +1,5 @@
 name: Build on Dispatch
-run-name: Build rootfs on Dispatch
+run-name: "Build for ${{ github.event.inputs.suite }} ${{ github.event.inputs.flavor }} by @${{ github.actor }}"
 
 on:
   workflow_dispatch:
