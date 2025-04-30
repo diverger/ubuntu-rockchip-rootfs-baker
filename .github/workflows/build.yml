@@ -1,4 +1,4 @@
-name: Build on Dispatch
+name: Build on dispatch
 run-name: "Build for ${{ github.event.inputs.suite }} ${{ github.event.inputs.flavor }} by @${{ github.actor }}"
 
 on:
@@ -83,7 +83,7 @@ jobs:
         shell: bash
         run: |
           # Include all files/dirs in *this* repo that affect the build output
-          echo "files_hash=$(find ${{ env.RECIPE_PATH }}/scripts ${{ env.RECIPE_PATH }}/build.sh ${{ env.RECIPE_PATH }}/config -type f -print0 | sort -z | xargs -0 sha1sum | sha1sum | awk '{ print $1 }')" >> $GITHUB_OUTPUT
+          echo "files_hash=$(find ${{ env.RECIPE_PATH }}/scripts/build-rootfs.sh ${{ env.RECIPE_PATH }}/build.sh ${{ env.RECIPE_PATH }}/config -type f -print0 | sort -z | xargs -0 sha1sum | sha1sum | awk '{ print $1 }')" >> $GITHUB_OUTPUT
 
       - name: Get External Repo Commit Hash
         id: external_commit
