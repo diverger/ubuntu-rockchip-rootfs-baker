@@ -1,5 +1,6 @@
 name: Build on dispatch
-run-name: "Build for ${{ github.event.inputs.suite }} ${{ github.event.inputs.flavor }} by @${{ github.actor }}"
+run-name: "Build for ${{ github.event.inputs.suite }} ${{ github.event.inputs.flavor }} by @${{ github.actor }} (Trigger: ${{ github.event.inputs.trigger_source }})"
+"
 
 on:
   workflow_dispatch:
@@ -22,6 +23,11 @@ on:
         - "desktop"
         - "server"
 
+      trigger_source:
+        description: "Source of the trigger (e.g., manual, workflow)"
+        required: false
+        type: string
+        default: "manual"
 
 env:
   RECIPE_REPO: "diverger/ubuntu-rockchip"
@@ -35,6 +41,19 @@ jobs:
     name: Build rootfs
 
     steps:
+
+      - name: Show Trigger Source
+        run: |
+          echo "Workflow triggered by: ${{ github.event.inputs.trigger_source }}"
+
+        # - name: Manual Trigger Step
+        #   if: github.event.inputs.trigger_source == 'manual'
+        #   run: echo "This step runs only for manual triggers."
+
+        # - name: Workflow Trigger Step
+        #   if: github.event.inputs.trigger_source == 'workflow'
+        #   run: echo "This step runs only when triggered by another workflow."
+
       - name: Get more disk space
         uses: jlumbroso/free-disk-space@main
         with:
