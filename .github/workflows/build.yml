@@ -1,6 +1,5 @@
 name: Build on dispatch
 run-name: "Build for ${{ github.event.inputs.suite }} ${{ github.event.inputs.flavor }} by @${{ github.actor }} (Trigger: ${{ github.event.inputs.trigger_source }})"
-"
 
 on:
   workflow_dispatch:
