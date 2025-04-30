@@ -67,17 +67,6 @@ jobs:
           echo "artifact_name=${artifact_name}" >> $GITHUB_OUTPUT
           echo "artifact_path=${artifact_path}" >> $GITHUB_OUTPUT
 
-      - name: Install dependencies
-        shell: bash
-        run: |
-          sudo apt-get update && apt-get purge needrestart -y && sudo apt-get upgrade -y
-          sudo apt-get install -y build-essential gcc-aarch64-linux-gnu bison \
-          qemu-user-static qemu-system-arm qemu-efi-aarch64 u-boot-tools binfmt-support \
-          debootstrap flex libssl-dev bc rsync kmod cpio xz-utils fakeroot parted \
-          udev dosfstools uuid-runtime git-lfs device-tree-compiler python3 \
-          python-is-python3 fdisk bc debhelper python3-pyelftools python3-setuptools \
-          python3-pkg-resources swig libfdt-dev libpython3-dev dctrl-tools gawk
-
       - name: Hash source files
         id: hash
         shell: bash
@@ -99,7 +88,8 @@ jobs:
         id: cache-artifact
         uses: actions/cache@v4
         with:
-          path: ${{ env.ROOTFS_PATH }}
+          # Cache the specific artifact file instead of the whole directory
+          path: ${{ steps.vars.outputs.artifact_path }}
           # ---- UPDATED KEY ----
           # Include OS, suite, flavor, local files hash, AND external repo commit hash
           key: ${{ runner.os }}-${{ github.event.inputs.suite }}-${{ github.event.inputs.flavor }}-${{ steps.hash.outputs.files_hash }}-${{ steps.external_commit.outputs.commit_hash }}
@@ -127,14 +117,7 @@ jobs:
       - name: Fix permissions for cache/upload
         if: steps.cache-artifact.outputs.cache-hit != 'true' # Only run if build happened
         shell: bash
-        run: |
-          echo "Attempting to fix permissions in ${{ env.ROOTFS_PATH }}"
-          # Change ownership first
-          sudo chown -R runner:runner ${{ env.ROOTFS_PATH }} || echo "chown failed but continuing"
-          # Ensure directories are traversable and files are readable by the owner (runner)
-          sudo find ${{ env.ROOTFS_PATH }} -type d -exec chmod u+rwx {} \; || echo "chmod on dirs failed but continuing"
-          sudo find ${{ env.ROOTFS_PATH }} -type f -exec chmod u+r {} \; || echo "chmod on files failed but continuing"
-          echo "Permission fix attempt finished."
+        run: sudo chown -R runner:runner ${{ env.ROOTFS_PATH }}
 
       - name: Upload
         uses: actions/upload-artifact@v4.3.3
