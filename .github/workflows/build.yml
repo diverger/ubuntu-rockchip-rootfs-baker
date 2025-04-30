@@ -117,7 +117,16 @@ jobs:
       - name: Fix permissions for cache/upload
         if: steps.cache-artifact.outputs.cache-hit != 'true' # Only run if build happened
         shell: bash
-        run: sudo chown -R runner:runner ${{ env.ROOTFS_PATH }}
+        run: |
+          artifact_file="${{ steps.vars.outputs.artifact_path }}"
+          echo "Attempting to fix ownership for ${artifact_file}"
+          if [ -f "${artifact_file}" ]; then
+            # Change ownership of the specific artifact file
+            sudo chown runner:runner "${artifact_file}" || echo "chown failed but continuing"
+            echo "Ownership fix attempt finished for ${artifact_file}."
+          else
+            echo "Artifact file ${artifact_file} not found, skipping ownership fix."
+          fi
 
       - name: Upload
         uses: actions/upload-artifact@v4.3.3
