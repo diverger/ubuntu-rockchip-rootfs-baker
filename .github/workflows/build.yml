@@ -28,6 +28,12 @@ on:
         type: string
         default: "manual"
 
+      artifact_retention_days:
+        description: "Number of days to retain the artifact"
+        required: false
+        type: number
+        default: 1
+
 env:
   RECIPE_REPO: "diverger/ubuntu-rockchip"
   RECIPE_PATH: "."
@@ -154,4 +160,5 @@ jobs:
         with:
             name: ${{ steps.vars.outputs.artifact_name }}
             path: ${{ steps.vars.outputs.artifact_path }}
+            retention-days: ${{ github.event.inputs.artifact_retention_days }}
             if-no-files-found: error
