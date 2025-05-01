@@ -31,7 +31,7 @@ on:
 env:
   RECIPE_REPO: "diverger/ubuntu-rockchip"
   RECIPE_PATH: "."
-  ROOTFS_PATH: "./build/rootfs"
+  ROOTFS_PATH: "./build"
 
 jobs:
   build:
@@ -41,15 +41,15 @@ jobs:
 
     steps:
 
-      - name: Show Trigger Source
+      - name: Show trigger source
         run: |
           echo "Workflow triggered by: ${{ github.event.inputs.trigger_source }}"
 
-        # - name: Manual Trigger Step
+        # - name: Manual trigger step
         #   if: github.event.inputs.trigger_source == 'manual'
         #   run: echo "This step runs only for manual triggers."
 
-        # - name: Workflow Trigger Step
+        # - name: Workflow trigger step
         #   if: github.event.inputs.trigger_source == 'workflow'
         #   run: echo "This step runs only when triggered by another workflow."
 
@@ -92,7 +92,7 @@ jobs:
           # Include all files/dirs in *this* repo that affect the build output
           echo "files_hash=$(find ${{ env.RECIPE_PATH }}/scripts/build-rootfs.sh ${{ env.RECIPE_PATH }}/build.sh ${{ env.RECIPE_PATH }}/config -type f -print0 | sort -z | xargs -0 sha1sum | sha1sum | awk '{ print $1 }')" >> $GITHUB_OUTPUT
 
-      - name: Get External Repo Commit Hash
+      - name: Get external repo commit hash
         id: external_commit
         shell: bash
         run: |
@@ -119,8 +119,9 @@ jobs:
         if: steps.cache-artifact.outputs.cache-hit != 'true'
         shell: bash
         run: |
-          sudo apt-get update && apt-get purge needrestart -y && sudo apt-get upgrade -y
-          sudo apt-get install -y build-essential gcc-aarch64-linux-gnu bison \
+          # Update, remove needrestart, and install dependencies in one go
+          sudo apt-get update && sudo apt-get purge needrestart -y && \
+          sudo apt-get install -y --no-install-recommends build-essential gcc-aarch64-linux-gnu bison \
           qemu-user-static qemu-system-arm qemu-efi-aarch64 u-boot-tools binfmt-support \
           debootstrap flex libssl-dev bc rsync kmod cpio xz-utils fakeroot parted \
           udev dosfstools uuid-runtime git-lfs device-tree-compiler python3 \
@@ -144,10 +145,12 @@ jobs:
             echo "Ownership fix attempt finished for ${artifact_file}."
           else
             echo "Artifact file ${artifact_file} not found, skipping ownership fix."
+            # Optionally, fail if the artifact wasn't created when expected
+            # exit 1
           fi
 
       - name: Upload
-        uses: actions/upload-artifact@v4.3.3
+        uses: actions/upload-artifact@v4
         with:
             name: ${{ steps.vars.outputs.artifact_name }}
             path: ${{ steps.vars.outputs.artifact_path }}
