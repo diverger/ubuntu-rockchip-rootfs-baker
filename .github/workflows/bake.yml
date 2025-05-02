@@ -1,0 +1,89 @@
+name: Bake on dispatch
+run-name: "Build for ${{ github.event.inputs.suite }} ${{ github.event.inputs.flavor }} by @${{ github.actor }} (Trigger: ${{ github.event.inputs.trigger_source }})"
+
+on:
+  workflow_dispatch:
+    inputs:
+      suite:
+        description: "Suite name"
+        required: true
+        type: choice
+        default: "noble"
+        options:
+        - "jammy"
+        - "noble"
+
+      flavor:
+        description: "Flavor type"
+        required: true
+        type: choice
+        default: "desktop"
+        options:
+        - "desktop"
+        - "server"
+
+      trigger_source:
+        description: "Source of the trigger (e.g., manual, workflow)"
+        required: false
+        type: string
+        default: "manual"
+
+      artifact_retention_days:
+        description: "Number of days to retain the artifact"
+        required: false
+        type: number
+        default: 1
+
+env:
+  RECIPE_REPO: "diverger/ubuntu-rockchip"
+  RECIPE_PATH: "."
+  ROOTFS_PATH: "./build"
+
+jobs:
+  build:
+    if: ${{ github.repository_owner == 'diverger'}}
+    runs-on: ubuntu-latest
+    name: Build rootfs
+
+    steps:
+
+      - name: Show trigger source
+        run: |
+          echo "Workflow triggered by: ${{ github.event.inputs.trigger_source }}"
+
+        # - name: Manual trigger step
+        #   if: github.event.inputs.trigger_source == 'manual'
+        #   run: echo "This step runs only for manual triggers."
+
+        # - name: Workflow trigger step
+        #   if: github.event.inputs.trigger_source == 'workflow'
+        #   run: echo "This step runs only when triggered by another workflow."
+
+      - name: Get more disk space
+        uses: jlumbroso/free-disk-space@main
+        with:
+          tool-cache: false
+          android: true
+          dotnet: true
+          haskell: true
+          large-packages: true
+          swap-storage: true
+
+      - name: Checkout private repository
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ env.RECIPE_REPO }}
+          token: ${{ secrets.REPO_ACCESS_TOKEN }}
+          path: ${{ env.RECIPE_PATH }}
+          clean: false
+          fetch-depth: 1
+
+      - name: Run local build
+        id: baker_step
+        uses: "./.github/actions/rootfs-baker"
+        with:
+          suite: ${{ github.event.inputs.suite }}
+          flavor: ${{ github.event.inputs.flavor }}
+          repo_access_token: ${{ secrets.REPO_ACCESS_TOKEN }}
+          trigger_source: ${{ github.event.inputs.trigger_source }}
+          artifact_retention_days: ${{ format('{0}',  github.event.inputs.artifact_retention_days) }}
