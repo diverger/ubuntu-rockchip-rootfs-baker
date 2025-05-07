@@ -85,5 +85,4 @@ jobs:
           suite: ${{ github.event.inputs.suite }}
           flavor: ${{ github.event.inputs.flavor }}
           repo_access_token: ${{ secrets.REPO_ACCESS_TOKEN }}
-          trigger_source: ${{ github.event.inputs.trigger_source }}
           artifact_retention_days: ${{ format('{0}',  github.event.inputs.artifact_retention_days) }}

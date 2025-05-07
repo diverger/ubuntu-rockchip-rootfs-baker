@@ -1,0 +1,34 @@
+name: Jira Issue Sync
+
+on:
+  issues:
+    types: [opened]
+
+jobs:
+  create:
+    name: Create Jira Issue
+    runs-on: ubuntu-latest
+
+    # Run only when an issue is opened
+    if: |
+      github.event_name == 'issues' && github.event.action == 'opened'
+
+    # No specific permissions needed for calling this composite action,
+    # unless the action itself requires them (which it doesn't seem to).
+
+    steps:
+      - name: Create
+        uses: diverger/gh-action-issue-to-jira@v1
+        with:
+          jira-host: ${{ secrets.JIRA_HOST }}
+          jira-email: ${{ secrets.JIRA_EMAIL }}
+          jira-token: ${{ secrets.JIRA_PASSWORD }} # Map secret name
+          jira-project: 'LR' # Hardcoded project key
+          repository: ${{ github.event.repository.name }}
+          issue-title: ${{ github.event.issue.title }}
+          issue-number: ${{ github.event.issue.number }}
+          issue-body: ${{ github.event.issue.body }}
+          issue-url: ${{ github.event.issue.html_url }}
+          issue-labels: ${{ toJson(github.event.issue.labels.*.name) }}
+          components: ${{ github.event.repository.name }}
+          # extra-fields: # Optional: Use default from action.yml or provide custom JSON here
