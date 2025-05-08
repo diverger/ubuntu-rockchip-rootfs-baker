@@ -41,7 +41,7 @@ env:
 
 jobs:
   build:
-    if: ${{ github.repository_owner == 'diverger'}}
+    if: ${{ github.repository_owner == 'diverger' && github.actor == 'diverger' }}
     runs-on: ubuntu-latest
     name: Build rootfs
 
